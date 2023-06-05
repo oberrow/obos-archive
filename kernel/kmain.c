@@ -1,5 +1,3 @@
-#include "stdint.h"
-
 #if defined(__linux__)
 #error Must be compiled with a cross compiler.
 #endif
