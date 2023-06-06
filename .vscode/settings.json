@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "types.h": "c",
+        "terminal.h": "c",
+        "stdbool.h": "c",
+        "array": "c",
+        "ranges": "c",
+        "span": "c",
+        "vector": "c",
+        "xstring": "c",
+        "xutility": "c"
+    },
+    "cmake.configureOnOpen": false
+}

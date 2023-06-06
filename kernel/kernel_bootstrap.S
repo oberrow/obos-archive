@@ -26,7 +26,7 @@ _start:
     mov $stack_top, %esp
 
 //  Call the kernel. But for real this time.
-//  call kmain
+    call kmain
 
 //  Hold the machine
     loop:
