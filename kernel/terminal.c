@@ -23,7 +23,7 @@ static inline UINT16_T vga_entry(unsigned char uc, UINT8_T color)
 	return (UINT16_T) uc | (UINT16_T) color << 8;
 }
 
-void _cdecl SetTerminalCursorPosition(CONSOLEPOINT point)
+void SetTerminalCursorPosition(CONSOLEPOINT point)
 {
 	UINT16_T pos = point.y * VGA_WIDTH + point.x;
  
@@ -35,7 +35,7 @@ void _cdecl SetTerminalCursorPosition(CONSOLEPOINT point)
     terminal_column = point.x;
     terminal_row = point.y;
 }
-CONSOLEPOINT _cdecl GetTerminalCursorPosition()
+CONSOLEPOINT GetTerminalCursorPosition()
 {
     CONSOLEPOINT ret;
     ret.x = terminal_column;
@@ -43,7 +43,7 @@ CONSOLEPOINT _cdecl GetTerminalCursorPosition()
     return ret;
 }
 
-void _cdecl InitializeTeriminal(UINT8_T color) 
+void InitializeTeriminal(UINT8_T color) 
 {
 	terminal_row = 0;
 	terminal_column = 0;
@@ -58,7 +58,7 @@ void _cdecl InitializeTeriminal(UINT8_T color)
 	}
 }
  
-void _cdecl TerminalSetColor(UINT8_T color) 
+void TerminalSetColor(UINT8_T color) 
 {
 	terminal_color = color;
 }
@@ -69,15 +69,18 @@ void terminal_putentryat(char c, UINT8_T color, SIZE_T x, SIZE_T y)
 	terminal_buffer[index] = vga_entry(c, color);
 }
 
-void _cdecl TerminalOutputCharacter(CHAR c)
+static int g_reachedEndTerminal = 0;
+
+void TerminalOutputCharacter(CHAR c)
 {
 	if(c == '\n')
 	{
-		if(++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
-        CONSOLEPOINT point;
-        point.x = terminal_column;
-        point.y = terminal_row;
+		if(++terminal_row >= VGA_HEIGHT)
+		{ terminal_row = 0; g_reachedEndTerminal = 1; }
+		CONSOLEPOINT point;
+		point.x = terminal_column;
+		if(!g_reachedEndTerminal)
+			point.y = terminal_row;
 		SetTerminalCursorPosition(point);
 		return;
 	}
@@ -86,30 +89,37 @@ void _cdecl TerminalOutputCharacter(CHAR c)
 		terminal_column = -1;
 		c = 0;
 	}
+	else if (c == '\t')
+	{
+		for(int i = 0; i < 5 && terminal_column < VGA_WIDTH; i++)
+			terminal_putentryat(' ', terminal_color, ++terminal_column, terminal_row);
+		return;
+	}
 	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
 	if (++terminal_column == VGA_WIDTH)
 	{
 		terminal_column = 0;
 		if (++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
+			{terminal_row = 0; g_reachedEndTerminal = 1;}
 	}
 	CONSOLEPOINT point;
 	point.x = terminal_column;
-    point.y = terminal_row;
+	if(!g_reachedEndTerminal)
+    	point.y = terminal_row;
     SetTerminalCursorPosition(point);
 }
-void _cdecl TerminalOutputCharacterAt(CONSOLEPOINT point, CHAR c)
+void TerminalOutputCharacterAt(CONSOLEPOINT point, CHAR c)
 {
 	terminal_putentryat(c, terminal_color, point.x, point.y);
 }
-void _cdecl TerminalOutput(CSTRING data, SIZE_T size)
+void TerminalOutput(CSTRING data, SIZE_T size)
 {
 	for (SIZE_T i = 0; i < size; i++)
 		TerminalOutputCharacter(data[i]);
 }
-void _cdecl TerminalOutputString(CSTRING data) 
+void TerminalOutputString(CSTRING data)
 {
-    SIZE_T i = 0;
-    for(; data[i]; i++);
+	SIZE_T i = 0;
+	for(; data[i]; i++);
 	TerminalOutput(data, i);
 }

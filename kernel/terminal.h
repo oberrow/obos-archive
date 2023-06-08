@@ -28,12 +28,12 @@ typedef struct _CONSOLEPOINT
     INT y;
 } CONSOLEPOINT, *PCONSOLEPOINT;
 
-void _cdecl InitializeTeriminal(UINT8_T color);
-void _cdecl SetTerminalCursorPosition(CONSOLEPOINT point);
-CONSOLEPOINT _cdecl GetTerminalCursorPosition();
-void _cdecl TerminalSetColor(UINT8_T color);
-void _cdecl TerminalOutputCharacter(CHAR c);
-void _cdecl TerminalOutputCharacterAt(CONSOLEPOINT point, CHAR c);
-void _cdecl TerminalOutput(CSTRING data, SIZE_T size);
-void _cdecl TerminalOutputString(CSTRING string);
+void InitializeTeriminal(UINT8_T color);
+void SetTerminalCursorPosition(CONSOLEPOINT point);
+CONSOLEPOINT GetTerminalCursorPosition();
+void TerminalSetColor(UINT8_T color);
+void TerminalOutputCharacter(CHAR c);
+void TerminalOutputCharacterAt(CONSOLEPOINT point, CHAR c);
+void TerminalOutput(CSTRING data, SIZE_T size);
+void TerminalOutputString(CSTRING string);
 #endif
