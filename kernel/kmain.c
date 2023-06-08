@@ -48,13 +48,13 @@ _Static_assert (sizeof(INT32_T) == 4, "INT32_T needs to be four bytes.");
 
 int acpiEnable(void);
 int initAcpi(void);
-int enableAcpi(void);
+int acpiEnable(void);
 void acpiPowerOff(void);
 
 void kmain()
 {
 	initAcpi();
-	enableAcpi();
+	acpiEnable();
 	InitializeTeriminal(TERMINALCOLOR_COLOR_WHITE | TERMINALCOLOR_COLOR_BLACK << 4);
 	
 	// label:
