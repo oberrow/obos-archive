@@ -2,6 +2,28 @@
 #define __KASSERT_H
 
 #define KSTR_LITERAL(literal) literal, sizeof(literal)
-#define kassert(expression, message, size) { if(!(expression)) { TerminalSetColor(TERMINALCOLOR_COLOR_RED | TERMINALCOLOR_COLOR_BLACK << 4); TerminalOutputString("Kernel panic! Assertion failed: \r\n"); if((void*)message) TerminalOutput(message, size); else { TerminalOutputCharacter('\t'); TerminalOutputString(#expression); } while(1); } }
+#define kpanic(message, size) { \
+    if((void*)message) \
+    {\
+        TerminalSetColor(TERMINALCOLOR_COLOR_RED | TERMINALCOLOR_COLOR_BLACK << 4);\
+        TerminalOutputString("Kernel panic! Message: \r\n");\
+        TerminalOutput((char*)message, (unsigned int)size);\
+    }\
+    while(1);\
+}
+#define kassert(expression, message, size) { \
+    if(!(expression))\
+    {\
+        if((void*)message)\
+            {kpanic(message, size);} \
+        else \
+        {\
+            TerminalSetColor(TERMINALCOLOR_COLOR_RED | TERMINALCOLOR_COLOR_BLACK << 4);\
+            TerminalOutputString("Kernel panic! Message: \r\n\t");\
+            TerminalOutputString(#expression);\
+        }\
+        while(1);\
+     }\
+}
 
 #endif

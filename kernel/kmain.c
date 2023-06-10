@@ -3,6 +3,9 @@
 #include "terminal.h"
 #include "types.h"
 #include "kassert.h"
+#include "kalloc.h"
+
+#include "multiboot/mutliboot.h"
 
 #if defined(__linux__)
 #error Must be compiled with a cross compiler.
@@ -51,17 +54,51 @@ int initAcpi(void);
 int acpiEnable(void);
 void acpiPowerOff(void);
 
-void kmain()
+multiboot_info_t* g_multibootInfo = (multiboot_info_t*)0;
+
+void __attribute__((stdcall)) invoke_kmain(multiboot_info_t* mbd, UINT32_T magic)
 {
+void kmain(multiboot_info_t* _mbd, UINT32_T _magic);
+    kmain(mbd, magic);
+}
+
+static inline char* strcpy(char* destination, const char* source, int bytesToCopy)
+{
+	for(int i = 0; i < bytesToCopy; i++)
+		destination[i] = source[i];
+	return destination;
+}
+
+int pow(int a, int b)
+{
+	int res = a;
+	for (int i = 0; i < b; i++) res *= a;
+	res /= a;
+	return res;
+}
+
+void kmain(multiboot_info_t* mbd, UINT32_T magic)
+{
+	InitializeTeriminal(TERMINALCOLOR_COLOR_WHITE | TERMINALCOLOR_COLOR_BLACK << 4);
 	initAcpi();
 	acpiEnable();
-	InitializeTeriminal(TERMINALCOLOR_COLOR_WHITE | TERMINALCOLOR_COLOR_BLACK << 4);
 	
-	// label:
-	TerminalOutputString("Hello, world!\r\n");
-	for(unsigned i = 0; i < 0x2F00000 * 10; i++)
-		asm("nop");
-	// goto label;
-	acpiPowerOff();
+	kassert(magic == MULTIBOOT_BOOTLOADER_MAGIC, "Invalid magic number for multiboot.\r\n", 37);
+	kassert(mbd->flags & (pow(2, 6) >> 1), "No memory map provided from GRUB.\r\n", 35);
+	
+	g_multibootInfo = mbd;
+	kmeminit();
+
+	SIZE_T real_size = 0;
+	char* memory = (char*)kalloc(16, &real_size);
+
+	if(memory)
+	{
+		strcpy(memory, "Hello, world!\r\n", 16);
+		TerminalOutput(memory, 15);
+	}
+
 	while(1);
+
+	acpiPowerOff();
 }

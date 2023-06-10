@@ -67,7 +67,11 @@
         "stddef.h": "c",
         "string.h": "c",
         "time.h": "c",
-        "io.h": "c"
+        "io.h": "c",
+        "mutliboot.h": "c",
+        "kassert.h": "c",
+        "kalloc.h": "c"
     },
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "C_Cpp.errorSquiggles": "enabled"
 }

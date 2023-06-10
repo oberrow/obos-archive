@@ -26,7 +26,9 @@ _start:
     mov $stack_top, %esp
 
 //  Call the kernel's main.
-    call kmain
+    push %eax
+    push %ebx
+    call invoke_kmain
 
 //  Hold the machine
     loop:

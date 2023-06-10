@@ -7,7 +7,9 @@
 #define _cdecl
 #endif
 
-typedef int BOOL;
+#define NULLPTR ((void*)0)
+
+typedef enum { FALSE, TRUE } BOOL;
 typedef unsigned long SIZE_T;
 typedef unsigned char UINT8_T;
 typedef unsigned short UINT16_T;
@@ -22,4 +24,7 @@ typedef int INT;
 typedef char CHAR, *PCHAR;
 typedef char *STRING;
 typedef const char *CSTRING;
+typedef void VOID;
+typedef void* PVOID;
+typedef const void* PCVOID;
 #endif

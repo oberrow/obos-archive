@@ -1,11 +1,13 @@
 echo Assembling "kernel/kernel_bootstrap.S"
 i686-elf-as kernel/kernel_bootstrap.S -o int/kernel_bootstrap.o
 echo Compiling "kernel/kmain.c"
-i686-elf-gcc kernel/kmain.c -o int/kmain.o -c  -O2 -Wall -Werror -Wno-error=misleading-indentation
+i686-elf-gcc kernel/kmain.c -o int/kmain.o -c  -O2 -Wall -Werror -Wno-error=misleading-indentation -Wno-error=builtin-declaration-mismatch
 echo Compiling "kernel/terminal.c"
-i686-elf-gcc kernel/terminal.c -o int/terminal.o -c -O2 -Wall -Werror -Wno-error=misleading-indentation
-echo Compiling "kernel/terminal.c"
-i686-elf-gcc kernel/acpi.c -o int/acpi.o -c -O2 -Wall -Werror -Wno-error=misleading-indentation
+i686-elf-gcc kernel/terminal.c -o int/terminal.o -c -O2 -Wall -Werror -Wno-error=misleading-indentation -Wno-error=builtin-declaration-mismatch
+echo Compiling "kernel/acpi.c"
+i686-elf-gcc kernel/acpi.c -o int/acpi.o -c -O2 -Wall -Werror -Wno-error=misleading-indentation -Wno-error=builtin-declaration-mismatch
+echo Compiling "kernel/kalloc.c"
+i686-elf-gcc kernel/kalloc.c -o int/kalloc.o -c -O2 -Wall -Werror -Wno-error=misleading-indentation -Wno-error=builtin-declaration-mismatch
 echo Linking object files...
 i686-elf-gcc -T linker.ld int/kernel_bootstrap.o int/kmain.o int/terminal.o int/acpi.o -o bin/oboskrnl.out -ffreestanding -O2 -nostdlib
 if $? -eq 1
