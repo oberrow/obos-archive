@@ -1,12 +1,6 @@
 #include "terminal.h"
 #include "types.h"
-
-#if defined(__linux__)
-#error Must be compiled with a cross compiler.
-#endif
-#if !defined(__i386__)
-#error Must be compiled with a ix86 compiler.
-#endif
+#include "inline-asm.h"
 
 extern void outb(UINT16_T port, UINT8_T val);
 
@@ -45,6 +39,11 @@ CONSOLEPOINT GetTerminalCursorPosition()
 
 void InitializeTeriminal(UINT8_T color) 
 {
+	outb(0x3D4, 0x0A);
+	outb(0x3D5, (inb(0x3D5) & 0xC0) | 7);
+	outb(0x3D4, 0x0B);
+	outb(0x3D5, (inb(0x3D5) & 0xE0) | 9);
+	
 	terminal_row = 0;
 	terminal_column = 0;
 	terminal_color = color;
@@ -61,6 +60,10 @@ void InitializeTeriminal(UINT8_T color)
 void TerminalSetColor(UINT8_T color) 
 {
 	terminal_color = color;
+}
+UINT8_T TerminalGetColor() 
+{
+	return terminal_color;
 }
  
 void terminal_putentryat(char c, UINT8_T color, SIZE_T x, SIZE_T y) 
@@ -95,6 +98,8 @@ void TerminalOutputCharacter(CHAR c)
 			terminal_putentryat(' ', terminal_color, ++terminal_column, terminal_row);
 		return;
 	}
+	else if (c == '\0')
+		return;
 	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
 	if (++terminal_column == VGA_WIDTH)
 	{

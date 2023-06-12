@@ -62,18 +62,18 @@ int memcmp(const void* mem1, const void* mem2, unsigned int size)
 	return 0;
 }
 
-unsigned int *acpiCheckRSDPtr(unsigned int* ptr)
+UINT32_T *acpiCheckRSDPtr(UINT32_T* ptr)
 {
 	char *sig = "RSD PTR ";
-	struct RSDPtr *rsdp = (struct RSDPtr *) ptr;
-	BYTE *bptr;
+	struct RSDPtr* rsdp = (struct RSDPtr*)ptr;
+	BYTE* bptr;
 	BYTE check = 0;
 	int i;
 
 	if (memcmp(sig, rsdp, 8) == 0)
 	{
 		// check checksum rsdpd
-		bptr = (BYTE *) ptr;
+		bptr = (BYTE*)ptr;
 		for (i=0; i < sizeof(struct RSDPtr); i++)
 		{
 			check += *bptr;
@@ -82,36 +82,36 @@ unsigned int *acpiCheckRSDPtr(unsigned int* ptr)
 
 		// found valid rsdpd   
 		if (check == 0)
-			return (unsigned int*)rsdp->RsdtAddress;
+			return rsdp->RsdtAddress;
 	}
 
 	return NULL;
 }
 
-unsigned int *acpiGetRSDPtr(void)
+UINT32_T *acpiGetRSDPtr(void)
 {
-	unsigned int *addr;
-	unsigned int *rsdp;
+	unsigned int* addr = (PVOID)0x000E0000;
+	unsigned int* rsdp = NULLPTR;	
 
-	// search below the 1mb mark for RSDP signature
-	for (addr = (unsigned int*)0x000E0000; (int)addr < 0x00100000; addr += 0x10 / sizeof(addr))
+	for (; addr < (UINT32_T*)0x00100000; addr += 0x10 / sizeof(addr))
 	{
-		rsdp = acpiCheckRSDPtr(addr);
-		if (rsdp != NULL)
-			return rsdp;
+	   rsdp = acpiCheckRSDPtr(addr);
+	   if (rsdp != NULL)
+	      return rsdp;
 	}
 
-	int ebda = *((short*)0x40E);
-	ebda = ebda*0x10 & 0x000FFFFF;
+	INT32_T _ebda = *((short*)0x40E);
+	_ebda = _ebda * 0x10 & 0x000FFFFF;
+	INTPTR_T ebda = _ebda;
 
-	for (addr = (unsigned int *) ebda; (int) addr<ebda+1024; addr+= 0x10/sizeof(addr))
+	for (addr = (unsigned int*)ebda; addr < (UINT32_T*)(ebda + 1024); addr += 0x10 / sizeof(addr))
 	{
-		rsdp = acpiCheckRSDPtr(addr);
-		if (rsdp != NULL)
-			return rsdp;
-	}
+	   rsdp = acpiCheckRSDPtr(addr);
+	   if (rsdp != NULL)
+	      return rsdp;
+	}	
 
-	return NULL;
+	return NULLPTR;
 }
 
 int acpiCheckHeader(unsigned int *ptr, char *sig)
@@ -137,27 +137,26 @@ int acpiCheckHeader(unsigned int *ptr, char *sig)
 int acpiEnable(void)
 {
 	// Check if ACPI is supported on the current computer.
-	if ( (inw((unsigned int) PM1a_CNT) &SCI_EN) == 0 )
+	if ( (inw((UINTPTR_T)PM1a_CNT), &SCI_EN) == 0 )
 	{
 		if (SMI_CMD != 0 && ACPI_ENABLE != 0)
 		{
-			outb((unsigned int)SMI_CMD, ACPI_ENABLE); // send acpi enable command
-			// give 3 seconds time to enable acpi
+			outb((UINTPTR_T)SMI_CMD, ACPI_ENABLE);
 			int i;
 			for (i = 0; i < 300; i++)
 			{
-				if ((inw((unsigned int)PM1a_CNT) &SCI_EN) == 1)
+				if (inw((UINTPTR_T)PM1a_CNT & SCI_EN) == 1)
 					break;
 				sleep(10);
 			}
 			if (PM1b_CNT != 0)
 				for (; i < 300; i++ )
 				{
-					if ((inw((unsigned int)PM1b_CNT) &SCI_EN) == 1)
+					if (inw((UINTPTR_T)PM1b_CNT & SCI_EN) == 1)
 						break;
 					sleep(10);
 				}
-				kassert(i < 300, "Could not enable ACPI.", 23);
+			kassert(i < 300, "Could not enable ACPI.", 23);
 			}
 			else
 			{}
@@ -167,7 +166,7 @@ int acpiEnable(void)
 
 int initAcpi(void)
 {
-	unsigned int *ptr = acpiGetRSDPtr();
+	UINT32_T *ptr = acpiGetRSDPtr();
 
 	if (ptr != NULL && acpiCheckHeader(ptr, "RSDT") == 0)
 	{
@@ -177,11 +176,11 @@ int initAcpi(void)
 
 		while (0 < entrys--)
 		{
-			if (acpiCheckHeader((unsigned int *) *ptr, "FACP") == 0)
+			if (acpiCheckHeader((UINT32_T*)((UINTPTR_T)(*ptr)), "FACP") == 0)
 			{
 				entrys = -2;
-				FACP *facp = (FACP *) *ptr;
-				if (acpiCheckHeader((unsigned int*)facp->DSDT, "DSDT") == 0)
+				FACP *facp = (FACP*)((UINTPTR_T)*ptr);
+				if (acpiCheckHeader(facp->DSDT, "DSDT") == 0)
 				{
 					char *S5Addr = (char*)facp->DSDT + 36;
 					int dsdtLength = *(facp->DSDT + 1) -36;
@@ -191,7 +190,7 @@ int initAcpi(void)
 							break;
 						S5Addr++;
 					}
-					kassert(dsdtLength > 0, "\\_S5 parse error.\n", 19);
+					kassert(dsdtLength > 0, "\\_S5 parse error.\r\n", 20);
 					// check if \_S5 was found
 					if (dsdtLength > 0)
 					{
@@ -222,14 +221,14 @@ int initAcpi(void)
 						kassert(0, "\\_S5 not present.\n", 19);
 				}
 				else
-					kassert(0, "DSDT invalid.\n", 11);
+					kassert(0, "DSDT invalid.\r\n", 15);
 			}
 			ptr++;
 		}
-		kassert(0, "No valid FACP present.\n", 24);
+		kassert(0, "No valid FACP present.\r\n", 24);
 		} 
 		else
-			kassert(0, "Computer doesn't support ACPI.\n", 10);
+			kassert(0, "Computer doesn't support ACPI.\r\n", 32);
 
 		return -1;
 }
@@ -244,9 +243,9 @@ void acpiPowerOff(void)
 	acpiEnable();
 
 	// Send the shutdown command,
-	outw((unsigned int)PM1a_CNT, SLP_TYPa | SLP_EN);
+	outw((UINTPTR_T)PM1a_CNT, SLP_TYPa | SLP_EN);
 	if (PM1b_CNT != 0)
-		outw((unsigned int)PM1b_CNT, SLP_TYPb | SLP_EN);
+		outw((UINTPTR_T)PM1b_CNT, SLP_TYPb | SLP_EN);
 
-	kassert(PM1b_CNT != 0, "ACPI poweroff failed.\n", 23);
+	kassert(PM1b_CNT != 0, "ACPI poweroff failed.\r\n", 24);
 }

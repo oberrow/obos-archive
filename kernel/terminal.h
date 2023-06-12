@@ -32,6 +32,7 @@ void InitializeTeriminal(UINT8_T color);
 void SetTerminalCursorPosition(CONSOLEPOINT point);
 CONSOLEPOINT GetTerminalCursorPosition();
 void TerminalSetColor(UINT8_T color);
+UINT8_T TerminalGetColor();
 void TerminalOutputCharacter(CHAR c);
 void TerminalOutputCharacterAt(CONSOLEPOINT point, CHAR c);
 void TerminalOutput(CSTRING data, SIZE_T size);

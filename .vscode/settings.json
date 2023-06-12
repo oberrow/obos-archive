@@ -70,7 +70,9 @@
         "io.h": "c",
         "mutliboot.h": "c",
         "kassert.h": "c",
-        "kalloc.h": "c"
+        "kalloc.h": "c",
+        "hash_map": "c",
+        "string_view": "c"
     },
     "cmake.configureOnOpen": false,
     "C_Cpp.errorSquiggles": "enabled"

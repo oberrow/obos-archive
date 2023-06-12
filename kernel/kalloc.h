@@ -12,5 +12,5 @@ typedef struct __memory_block
 // Initializes the memory table.
 void kmeminit();
 // Gets a block for use by the kernel
-void* kalloc(SIZE_T size, SIZE_T* real_size);
+void* kfindmemblock(SIZE_T size, SIZE_T* real_size);
 #endif
