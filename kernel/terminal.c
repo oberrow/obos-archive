@@ -4,6 +4,9 @@
 
 #include "multiboot/mutliboot.h"
 
+#define vga_entry(uc, color) ((UINT16_T) uc | (UINT16_T) color << 8)
+#define terminal_putentryat(c, color, x,y) terminal_buffer[(y) * VGA_WIDTH + (x)] = vga_entry((c), (color))
+
 static const SIZE_T VGA_WIDTH = 80;
 static const SIZE_T VGA_HEIGHT = 25;
  
@@ -72,9 +75,6 @@ UINT8_T TerminalGetColor()
 {
 	return terminal_color;
 }
- 
-#define vga_entry(uc, color) ((UINT16_T) uc | (UINT16_T) color << 8)
-#define terminal_putentryat(c, color, x,y) terminal_buffer[(y) * VGA_WIDTH + (x)] = vga_entry((c), (color))
 
 static BOOL g_reachedEndTerminal = 0;
 

@@ -68,8 +68,11 @@ void kmain(multiboot_info_t* mbd, UINT32_T magic)
 	kmeminit();
 	SIZE_T heapSize = 0;
 	// Find the bigest block of memory.
-	PVOID heapBlock = kfindmemblock(-1, &heapSize);
-	kheapinit(heapBlock, heapSize);
+	PVOID heapStorageBlock = kfindmemblock(-1, &heapSize);
+	kheapinit(heapStorageBlock, heapSize);
+
+	STRING test = kheapalloc(sizeof("Hello, world!\r\n"), 0);
+	strcpy(test, KSTR_LITERAL("Hello, world!\r\n"));
 
 	while(1);
 

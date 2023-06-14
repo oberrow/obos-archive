@@ -136,8 +136,9 @@ void kheapinit(PVOID block, SIZE_T blockSize)
 	// the number that is subtracted / 512. Is this even possible?
 	// I kind of gave up on that, but if you happen to come across this file and find a solution,
 	// please make an issue with the solution.
-	g_kHeapHeaderSize = blockSize / sizeof(heapMemoryBlock) * 2;
-	g_kHeapBlockSize = (blockSize - g_kHeapHeaderSize / 2) / 2;
+	g_kHeapHeaderSize = blockSize / sizeof(heapMemoryBlock);
+	g_kHeapBlockSize = (blockSize - g_kHeapHeaderSize) / 2;
+	g_kHeapHeaderSize *= 2;
 }
 PVOID kheapalloc(SIZE_T size, SIZE_T expectedResize)
 {
@@ -160,12 +161,12 @@ PVOID kheapalloc(SIZE_T size, SIZE_T expectedResize)
 	if (blockLocation > g_kHeap + g_kHeapBlockSize + g_kHeapHeaderSize || blockLocation < g_kHeap)
 		blockLocation -= size / 2;
 	if (blockLocation > g_kHeap + g_kHeapBlockSize + g_kHeapHeaderSize || blockLocation < g_kHeap)
-		return 0xFFFFFFFF;
+		return (PVOID)0xFFFFFFFF;
 	for(; i < g_kHeapHeaderSize / sizeof(heapMemoryBlock); i++)
 	{
 		heapMemoryBlock* header = &heapHeader[i];
-		if(header->location >= blockLocation && header + header->size <= blockLocation)
-			return 0xFFFFFFFF;
+		if(header->location >= blockLocation && ((UINTPTR_T)header->location + header->size) <= (UINTPTR_T)blockLocation)
+			return (PVOID)0xFFFFFFFF;
 		else
 			continue;
 	}
