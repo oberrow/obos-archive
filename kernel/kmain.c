@@ -53,6 +53,8 @@ static void onKernelPanic()
 
 void kmain(multiboot_info_t* mbd, UINT32_T magic)
 {
+	g_multibootInfo = mbd;
+
 	InitializeTeriminal(TERMINALCOLOR_COLOR_WHITE | TERMINALCOLOR_COLOR_BLACK << 4);
 	initAcpi();
 	acpiEnable();
@@ -61,19 +63,13 @@ void kmain(multiboot_info_t* mbd, UINT32_T magic)
 
 	kassert(magic == MULTIBOOT_BOOTLOADER_MAGIC, "Invalid magic number for multiboot.\r\n", 37);
 	kassert(mbd->flags >> 6 & 0x1, "No memory map provided from GRUB.\r\n", 35);
-	
-	g_multibootInfo = mbd;
+	kassert(mbd->framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT, KSTR_LITERAL("The video type isn't MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT\r\n"));
+
 	kmeminit();
-
-	SIZE_T real_size = 0;
-	char* memory = (char*)kfindmemblock(32, &real_size);
-
-	kassert(memory != (char*)0xFFFFFFFF, "Could not find a block big enough for the string.\r\n", 51);
-
-	strcpy(memory, "Hello, world!\r\n", 16);
-	strcpy(memory + 16, "Hello, world!\r\n", 16);
-	TerminalOutput(memory, 15);
-	TerminalOutput(memory + 16, 15);
+	SIZE_T heapSize = 0;
+	// Find the bigest block of memory.
+	PVOID heapBlock = kfindmemblock(-1, &heapSize);
+	kheapinit(heapBlock, heapSize);
 
 	while(1);
 

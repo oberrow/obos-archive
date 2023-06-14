@@ -2,19 +2,29 @@
 #include "types.h"
 #include "inline-asm.h"
 
-extern void outb(UINT16_T port, UINT8_T val);
+#include "multiboot/mutliboot.h"
 
 static const SIZE_T VGA_WIDTH = 80;
 static const SIZE_T VGA_HEIGHT = 25;
  
-SIZE_T terminal_row;
-SIZE_T terminal_column;
-UINT8_T terminal_color;
-UINT16_T* terminal_buffer;
- 
-static inline UINT16_T vga_entry(unsigned char uc, UINT8_T color) 
+static SIZE_T terminal_row;
+static SIZE_T terminal_column;
+static UINT8_T terminal_color;
+static UINT16_T* terminal_buffer;
+
+extern multiboot_info_t* g_multibootInfo;
+
+static inline void* memsetb(void* destination, BYTE value, SIZE_T countBytes)
 {
-	return (UINT16_T) uc | (UINT16_T) color << 8;
+	CHAR* _dest = destination;
+	for(int i = 0; i < countBytes; i++, _dest[i] = value);
+	return destination;
+}
+static inline void* memsetw(void* destination, UINT16_T value, SIZE_T count)
+{
+	UINT16_T* _dest = destination;
+	for(int i = 0; i < count; i++, _dest[i] = value);
+	return destination;
 }
 
 void SetTerminalCursorPosition(CONSOLEPOINT point)
@@ -47,13 +57,10 @@ void InitializeTeriminal(UINT8_T color)
 	terminal_row = 0;
 	terminal_column = 0;
 	terminal_color = color;
-	terminal_buffer = (UINT16_T*) 0xB8000;
+	terminal_buffer = (UINT16_T*)(UINTPTR_T)g_multibootInfo->framebuffer_addr;
 	for (SIZE_T y = 0; y < VGA_HEIGHT; y++) {
 		for (SIZE_T x = 0; x < VGA_WIDTH; x++)
-		{
-			const SIZE_T index = y * VGA_WIDTH + x;
-			terminal_buffer[index] = vga_entry(' ', terminal_color);
-		}
+			terminal_buffer[y * VGA_WIDTH + x] = vga_entry(' ', terminal_color);
 	}
 }
  
@@ -66,20 +73,24 @@ UINT8_T TerminalGetColor()
 	return terminal_color;
 }
  
-void terminal_putentryat(char c, UINT8_T color, SIZE_T x, SIZE_T y) 
-{
-	const SIZE_T index = y * VGA_WIDTH + x;
-	terminal_buffer[index] = vga_entry(c, color);
-}
+#define vga_entry(uc, color) ((UINT16_T) uc | (UINT16_T) color << 8)
+#define terminal_putentryat(c, color, x,y) terminal_buffer[(y) * VGA_WIDTH + (x)] = vga_entry((c), (color))
 
-static int g_reachedEndTerminal = 0;
+static BOOL g_reachedEndTerminal = 0;
 
 void TerminalOutputCharacter(CHAR c)
 {
 	if(c == '\n')
 	{
 		if(++terminal_row >= VGA_HEIGHT)
-		{ terminal_row = 0; g_reachedEndTerminal = 1; }
+		{
+			g_reachedEndTerminal = TRUE;
+			memsetb(terminal_buffer, 0, (VGA_WIDTH - 1) * sizeof(UINT16_T));
+			for(int y = 0, y2 = 1; y < VGA_HEIGHT; y++, y2++)
+				for(int x = 0; x < VGA_WIDTH; x++)
+					terminal_buffer[y * VGA_WIDTH + x] = terminal_buffer[y2 * VGA_WIDTH + x];
+			terminal_row = VGA_HEIGHT - 1;
+		}
 		CONSOLEPOINT point;
 		point.x = terminal_column;
 		if(!g_reachedEndTerminal)
@@ -105,7 +116,10 @@ void TerminalOutputCharacter(CHAR c)
 	{
 		terminal_column = 0;
 		if (++terminal_row == VGA_HEIGHT)
-			{terminal_row = 0; g_reachedEndTerminal = 1;}
+		{
+			terminal_row = 0;
+			 g_reachedEndTerminal = 1;
+		}
 	}
 	CONSOLEPOINT point;
 	point.x = terminal_column;

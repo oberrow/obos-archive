@@ -63,7 +63,43 @@ void kmeminit()
 PVOID kfindmemblock(SIZE_T size, SIZE_T* real_size)
 {
 	void* ret = (void*)0xFFFFFFFF;
-	for(int i = 0; i < g_kMemoryTableSize; i++)
+	if(size == -1)
+	{
+		register void* sp asm("sp");
+		struct size
+		{
+			SIZE_T len;
+			SIZE_T index;
+		};
+		struct size* sizes = sp -= g_kMemoryTableSize * sizeof(size);
+		for(int i = 0; i < g_kMemoryTableSize; i++)
+		{
+			memory_block* block = &g_kMemoryTable[i];
+			if(!block->isInUse)
+			{
+				struct size temp;
+				temp.len = block->size;
+				temp.index = i;
+				sizes[i] = temp;
+				break;
+			}
+		}
+		int temp = 0;
+		for (int i = 0; i < g_kMemoryTableSize; i++) 
+			for (int j = i+1; j < g_kMemoryTableSize; j++) 
+           		if(sizes[i].len > sizes[j].len) 
+				{    
+               		temp = sizes[i].len;
+               		sizes[i].len = sizes[j].len;
+               		sizes[j].len = temp;    
+           		}
+		SIZE_T biggestBlockIndex = sizes[g_kMemoryTableSize - 1].index;  
+		memory_block* block = g_kMemoryTable + biggestBlockIndex;
+		ret = (PVOID)block->start;
+		block->isInUse = TRUE;
+		*real_size = block->size;
+	}
+	for(int i = 0; i < g_kMemoryTableSize && size != -1; i++)
 	{
 		memory_block* block = &g_kMemoryTable[i];
 		if(block->size >= size && !block->isInUse)
@@ -76,4 +112,65 @@ PVOID kfindmemblock(SIZE_T size, SIZE_T* real_size)
 		}
 	}
 	return ret;
+}
+
+typedef struct __heapMemoryBlock
+{
+	PVOID location;
+	SIZE_T size;
+	UINT32_T __padding;
+	SIZE_T expectedResize;
+} __attribute__((packed)) heapMemoryBlock; 
+
+static PVOID g_kHeap = NULLPTR;
+static SIZE_T g_kHeapBlockSize = 0;
+static SIZE_T g_kHeapHeaderSize = 0;
+
+void kheapinit(PVOID block, SIZE_T blockSize)
+{
+	kassert(blockSize % 512 == 0, KSTR_LITERAL("The block of memory for the heap must be divisible by 512."));
+	g_kHeap = block;
+	// We have a complicated math problem. We need some magic number that we can: a) calculate at runtime b) 
+	// can be predefined. This number must be able to divide a number divisible by 512 by this number and get a number we
+	// can subtract by this number divisible by 512 and will make the number that is divided / 8 =
+	// the number that is subtracted / 512. Is this even possible?
+	// I kind of gave up on that, but if you happen to come across this file and find a solution,
+	// please make an issue with the solution.
+	g_kHeapHeaderSize = blockSize / sizeof(heapMemoryBlock) * 2;
+	g_kHeapBlockSize = (blockSize - g_kHeapHeaderSize / 2) / 2;
+}
+PVOID kheapalloc(SIZE_T size, SIZE_T expectedResize)
+{
+	heapMemoryBlock* heapHeader = g_kHeap;
+	heapMemoryBlock* headerData = NULLPTR;
+	int i = 0;
+	for(; i < g_kHeapHeaderSize / sizeof(heapMemoryBlock); i++)
+	{
+		headerData = &heapHeader[i];
+		if(headerData->location == NULLPTR && headerData->size == 0)
+			break;
+		else
+			continue;
+	}
+	if(i == 0)
+		return (PCHAR)g_kHeap + g_kHeapHeaderSize;
+	if(headerData->location != NULLPTR && headerData->size != 0)
+		return (PVOID)-1;
+	PVOID blockLocation = (headerData - 1)->location + (headerData - 1)->expectedResize + size / 2;
+	if (blockLocation > g_kHeap + g_kHeapBlockSize + g_kHeapHeaderSize || blockLocation < g_kHeap)
+		blockLocation -= size / 2;
+	if (blockLocation > g_kHeap + g_kHeapBlockSize + g_kHeapHeaderSize || blockLocation < g_kHeap)
+		return 0xFFFFFFFF;
+	for(; i < g_kHeapHeaderSize / sizeof(heapMemoryBlock); i++)
+	{
+		heapMemoryBlock* header = &heapHeader[i];
+		if(header->location >= blockLocation && header + header->size <= blockLocation)
+			return 0xFFFFFFFF;
+		else
+			continue;
+	}
+	headerData->location = blockLocation;
+	headerData->size = size;
+	headerData->expectedResize = expectedResize;
+	return blockLocation;
 }

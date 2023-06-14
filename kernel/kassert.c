@@ -12,6 +12,10 @@ void setOnKernelPanic(void (*callback)())
 {
     onKernelPanic = callback;
 }
+void resetOnKernelPanic()
+{
+    onKernelPanic = defaultKernelPanic;
+}
 
 void kpanic(CSTRING message, SIZE_T size)
 {

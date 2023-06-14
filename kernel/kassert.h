@@ -6,6 +6,7 @@
 #define KSTR_LITERAL(literal) literal, sizeof(literal) - 1
 
 void setOnKernelPanic(void(*callback)());
+void resetOnKernelPanic();
 
 void kpanic(CSTRING message, SIZE_T size);
 void kassert(BOOL expression, CSTRING message, SIZE_T size);

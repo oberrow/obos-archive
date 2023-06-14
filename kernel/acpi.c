@@ -233,12 +233,10 @@ int initAcpi(void)
 		return -1;
 }
 
-
-
 void acpiPowerOff(void)
 {
-	if (SCI_EN == 0)
-		return;
+	resetOnKernelPanic();
+	kassert(SCI_EN != 0, "ACPI power off failed.\r\n", 24);
 
 	acpiEnable();
 
@@ -246,6 +244,5 @@ void acpiPowerOff(void)
 	outw((UINTPTR_T)PM1a_CNT, SLP_TYPa | SLP_EN);
 	if (PM1b_CNT != 0)
 		outw((UINTPTR_T)PM1b_CNT, SLP_TYPb | SLP_EN);
-
-	kassert(PM1b_CNT != 0, "ACPI poweroff failed.\r\n", 24);
+	kpanic("ACPI power off failed.\r\n", 24);
 }
